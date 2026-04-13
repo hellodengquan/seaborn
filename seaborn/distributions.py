@@ -360,6 +360,7 @@ class _DistributionPlotter(VectorPlotter):
                 continue
 
             if log_scale:
+                # Convert support from log space to linear space
                 support = np.power(10, support)
 
             # Apply a scaling factor so that the integral over all subsets is 1
@@ -478,12 +479,8 @@ class _DistributionPlotter(VectorPlotter):
             widths = res["space"].to_numpy()
             edges = res[orient].to_numpy() - widths / 2
 
-            # Convert edges back to original units for plotting
-            if self._log_scaled(self.data_variable):
-                widths = np.power(10, edges + widths) - np.power(10, edges)
-                edges = np.power(10, edges)
-
             # Rescale the smoothed curve to match the histogram
+            # Use log-space widths when log scaled to match KDE density integral
             if kde and key in densities:
                 density = densities[key]
                 if estimator.cumulative:
@@ -491,6 +488,11 @@ class _DistributionPlotter(VectorPlotter):
                 else:
                     hist_norm = (heights * widths).sum()
                 densities[key] *= hist_norm
+
+            # Convert edges back to original units for plotting
+            if self._log_scaled(self.data_variable):
+                widths = np.power(10, edges + widths) - np.power(10, edges)
+                edges = np.power(10, edges)
 
             # Pack the histogram data and metadata together
             edges = edges + (1 - shrink) / 2 * widths
