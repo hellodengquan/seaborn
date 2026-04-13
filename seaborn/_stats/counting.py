@@ -131,7 +131,8 @@ class Hist(Stat):
             bin_edges = np.arange(start - .5, stop + 1.5)
         elif binwidth is not None:
             step = binwidth
-            bin_edges = np.arange(start, stop + step, step)
+            bins = int(np.ceil((stop - start) / step))
+            bin_edges = np.linspace(start, start + bins * step, bins + 1)
         else:
             bin_edges = np.histogram_bin_edges(vals, bins, binrange, weight)
 
