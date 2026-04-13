@@ -1508,20 +1508,28 @@ def variable_type(vector, boolean_type="numeric"):
     # At this point, drop nans to simplify further type inference
     vector = vector.dropna()
 
-    # Special-case binary/boolean data, allow caller to determine
-    # This triggers a numpy warning when vector has strings/objects
-    # https://github.com/numpy/numpy/issues/6784
-    # Because we reduce with .all(), we are agnostic about whether the
-    # comparison returns a scalar or vector, so we will ignore the warning.
-    # It triggers a separate DeprecationWarning when the vector has datetimes:
-    # https://github.com/numpy/numpy/issues/13548
-    # This is considered a bug by numpy and will likely go away.
-    with warnings.catch_warnings():
-        warnings.simplefilter(
-            action='ignore', category=(FutureWarning, DeprecationWarning)
-        )
-        if np.isin(vector, [0, 1]).all():
-            return VariableType(boolean_type)
+    # Skip binary check for datetime/timedelta; these dtypes cannot be 0/1
+    if pd.api.types.is_datetime64_dtype(vector) or pd.api.types.is_timedelta64_dtype(vector):
+        pass
+    else:
+        # Special-case binary/boolean data, allow caller to determine
+        # This triggers a numpy warning when vector has strings/objects
+        # https://github.com/numpy/numpy/issues/6784
+        # Because we reduce with .all(), we are agnostic about whether the
+        # comparison returns a scalar or vector, so we will ignore the warning.
+        # It triggers a separate DeprecationWarning when the vector has datetimes:
+        # https://github.com/numpy/numpy/issues/13548
+        # This is considered a bug by numpy and will likely go away.
+        # Also wrap in try/except to handle dtypes where np.isin fails with TypeError
+        with warnings.catch_warnings():
+            warnings.simplefilter(
+                action='ignore', category=(FutureWarning, DeprecationWarning)
+            )
+            try:
+                if np.isin(vector, [0, 1]).all():
+                    return VariableType(boolean_type)
+            except TypeError:
+                pass
 
     # Defer to positive pandas tests
     if pd.api.types.is_numeric_dtype(vector):
@@ -1529,6 +1537,9 @@ def variable_type(vector, boolean_type="numeric"):
 
     if pd.api.types.is_datetime64_dtype(vector):
         return VariableType("datetime")
+
+    if pd.api.types.is_timedelta64_dtype(vector):
+        return VariableType("numeric")
 
     # --- If we get to here, we need to check the entries
 
