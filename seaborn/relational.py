@@ -15,6 +15,7 @@ from .utils import (
     _deprecate_ci,
     _get_transform_functions,
     _scatter_legend_artist,
+    _normalize_kwargs,
 )
 from ._statistics import EstimateAggregator
 from .axisgrid import FacetGrid, _facet_docs
@@ -396,6 +397,9 @@ class _ScatterPlotter(_RelationalPlotter):
         data = self.comp_data.dropna()
         if data.empty:
             return
+
+        # Normalize kwargs to handle aliases (e.g., ec -> edgecolor)
+        kws = _normalize_kwargs(kws, mpl.collections.PathCollection)
 
         # Define the vectors of x and y positions
         empty = np.full(len(data), np.nan)
