@@ -1530,6 +1530,9 @@ def variable_type(vector, boolean_type="numeric"):
     if pd.api.types.is_datetime64_dtype(vector):
         return VariableType("datetime")
 
+    if pd.api.types.is_timedelta64_dtype(vector):
+        return VariableType("datetime")
+
     # --- If we get to here, we need to check the entries
 
     # Check for a collection where everything is a number
