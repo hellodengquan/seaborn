@@ -415,6 +415,13 @@ class _ScatterPlotter(_RelationalPlotter):
             example_marker = self._style_map(example_level, "marker")
             kws.setdefault("marker", example_marker)
 
+        # Handle abbreviated parameter names by converting to canonical form
+        # This avoids conflicts when we set defaults (e.g., ec vs edgecolor)
+        for short, full in [("ec", "edgecolor"), ("fc", "facecolor"),
+                            ("lw", "linewidth"), ("ls", "linestyle")]:
+            if short in kws:
+                kws[full] = kws.pop(short)
+
         # Conditionally set the marker edgecolor based on whether the marker is "filled"
         # See https://github.com/matplotlib/matplotlib/issues/17849 for context
         m = kws.get("marker", mpl.rcParams.get("marker", "o"))
