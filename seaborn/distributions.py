@@ -180,9 +180,9 @@ class _DistributionPlotter(VectorPlotter):
                 kws["color"] = "none"
 
             if multiple in ["stack", "fill"] or element == "bars":
-                kws.setdefault("edgecolor", mpl.rcParams["patch.edgecolor"])
+                kws.setdefault("edgecolor", kws.pop("ec", mpl.rcParams["patch.edgecolor"]))
             else:
-                kws.setdefault("edgecolor", to_rgba(color, 1))
+                kws.setdefault("edgecolor", kws.pop("ec", to_rgba(color, 1)))
         elif element == "bars":
             kws["facecolor"] = "none"
             kws["edgecolor"] = to_rgba(color, alpha)
@@ -1284,7 +1284,7 @@ class _DistributionPlotter(VectorPlotter):
 
             ax = self._get_axes(sub_vars)
 
-            kws.setdefault("linewidth", 1)
+            kws.setdefault("linewidth", kws.pop("lw", 1))
 
             if expand_margins:
                 xmarg, ymarg = ax.margins()

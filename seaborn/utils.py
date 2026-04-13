@@ -121,7 +121,7 @@ def _default_color(method, hue, color, kws, saturation=1):
         # and the latter might be in the kws dict
         scout_size = max(
             np.atleast_1d(kws.get(key, [])).shape[0]
-            for key in ["s", "c", "fc", "facecolor", "facecolors"]
+            for key in ["s", "c", "fc", "facecolor", "facecolors", "ec", "edgecolor"]
         )
         scout_x = scout_y = np.full(scout_size, np.nan)
 

@@ -422,7 +422,7 @@ class _ScatterPlotter(_RelationalPlotter):
             # TODO in more recent matplotlib (which?) can pass a MarkerStyle here
             m = mpl.markers.MarkerStyle(m)
         if m.is_filled():
-            kws.setdefault("edgecolor", "w")
+            kws.setdefault("edgecolor", kws.pop("ec", "w"))
 
         # Draw the scatter plot
         points = ax.scatter(x=x, y=y, **kws)
@@ -441,7 +441,7 @@ class _ScatterPlotter(_RelationalPlotter):
 
         # Apply dependent default attributes
 
-        if "linewidth" not in kws:
+        if "linewidth" not in kws and "lw" not in kws:
             sizes = points.get_sizes()
             linewidth = .08 * np.sqrt(np.percentile(sizes, 10))
             points.set_linewidths(linewidth)
