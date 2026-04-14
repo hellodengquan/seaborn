@@ -203,6 +203,59 @@ class TestHist:
         for _, out_part in out.groupby("a"):
             assert out_part["y"].sum() == pytest.approx(100)
 
+    def test_density_common_norm_true_unequal_groups(self):
+
+        groupby = GroupBy(["g"])
+
+        class Scale:
+            scale_type = "continuous"
+
+        df = pd.DataFrame(dict(
+            x=np.concatenate([np.zeros(400), np.zeros(100)]),
+            g=["a"] * 400 + ["b"] * 100,
+        ))
+        h = Hist(stat="density", common_norm=True, binwidth=1, binrange=(-.5, .5))
+        out = h(df, groupby, "x", {"x": Scale()})
+        assert (out["y"] * out["space"]).sum() == pytest.approx(1)
+        assert out.loc[out["g"] == "a", "y"].values[0] == pytest.approx(0.8)
+        assert out.loc[out["g"] == "b", "y"].values[0] == pytest.approx(0.2)
+
+    def test_density_common_norm_false_unequal_groups(self):
+
+        groupby = GroupBy(["g"])
+
+        class Scale:
+            scale_type = "continuous"
+
+        df = pd.DataFrame(dict(
+            x=np.concatenate([np.zeros(400), np.zeros(100)]),
+            g=["a"] * 400 + ["b"] * 100,
+        ))
+        h = Hist(stat="density", common_norm=False, binwidth=1, binrange=(-.5, .5))
+        out = h(df, groupby, "x", {"x": Scale()})
+        for _, out_part in out.groupby("g"):
+            assert (out_part["y"] * out_part["space"]).sum() == pytest.approx(1)
+        assert out.loc[out["g"] == "a", "y"].values[0] == pytest.approx(1)
+        assert out.loc[out["g"] == "b", "y"].values[0] == pytest.approx(1)
+
+    def test_density_common_norm_subset(self):
+
+        groupby = GroupBy(["a", "s", "g"])
+
+        class Scale:
+            scale_type = "continuous"
+
+        df = pd.DataFrame(dict(
+            x=np.concatenate([np.zeros(300), np.zeros(100), np.zeros(100)]),
+            a=["x"] * 400 + ["y"] * 100,
+            s=["p"] * 300 + ["q"] * 200,
+            g=["1"] * 200 + ["2"] * 300,
+        ))
+        h = Hist(stat="density", common_norm=["a"], binwidth=1, binrange=(-.5, .5))
+        out = h(df, groupby, "x", {"x": Scale()})
+        for _, out_part in out.groupby("a"):
+            assert (out_part["y"] * out_part["space"]).sum() == pytest.approx(1)
+
     def test_common_norm_warning(self, long_df, triple_args):
 
         h = Hist(common_norm=["b"])
