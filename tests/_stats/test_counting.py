@@ -183,6 +183,33 @@ class TestHist:
         out = h(long_df, *single_args)
         assert out["y"].max() == 1
 
+    def test_density_common_norm_default(self, long_df, triple_args):
+        # Regression test for density calculation with common_norm=True
+        # When groups have different sizes but same distribution,
+        # density should be normalized across all groups
+        h = Hist(stat="density")
+        out = h(long_df, *triple_args)
+        # Total area across all groups should be 1
+        assert (out["y"] * out["space"]).sum() == pytest.approx(1)
+
+    def test_density_common_norm_false(self, long_df, triple_args):
+        # Regression test for density calculation with common_norm=False
+        # Each group should be normalized independently
+        h = Hist(stat="density", common_norm=False)
+        out = h(long_df, *triple_args)
+        # Each group should have area 1
+        for _, out_part in out.groupby(["a", "s"]):
+            assert (out_part["y"] * out_part["space"]).sum() == pytest.approx(1)
+
+    def test_density_common_norm_subset(self, long_df, triple_args):
+        # Regression test for density calculation with common_norm=["a"]
+        # Density should be normalized within each "a" group
+        h = Hist(stat="density", common_norm=["a"])
+        out = h(long_df, *triple_args)
+        # Each "a" group should have area 1
+        for _, out_part in out.groupby("a"):
+            assert (out_part["y"] * out_part["space"]).sum() == pytest.approx(1)
+
     def test_common_norm_default(self, long_df, triple_args):
 
         h = Hist(stat="percent")
