@@ -77,17 +77,6 @@ def variable_type(
     # Now drop nulls to simplify further type inference
     vector = vector.dropna()
 
-    # Defer to positive pandas tests
-    if pd.api.types.is_numeric_dtype(vector):
-        return VarType("numeric")
-
-    if pd.api.types.is_datetime64_dtype(vector):
-        return VarType("datetime")
-
-    # Handle timedelta type (similar to datetime)
-    if pd.api.types.is_timedelta64_dtype(vector):
-        return VarType("datetime")
-
     # Special-case binary/boolean data, allow caller to determine
     # This triggers a numpy warning when vector has strings/objects
     # https://github.com/numpy/numpy/issues/6784
@@ -96,8 +85,6 @@ def variable_type(
     # It triggers a separate DeprecationWarning when the vector has datetimes:
     # https://github.com/numpy/numpy/issues/13548
     # This is considered a bug by numpy and will likely go away.
-    # Note: np.isin can raise TypeError for certain dtypes (e.g., timedelta),
-    # so we wrap it in a try-except block.
     with warnings.catch_warnings():
         warnings.simplefilter(
             action='ignore',
@@ -116,6 +103,16 @@ def variable_type(
                 boolean_vector = False
         if boolean_vector:
             return VarType(boolean_type)
+
+    # Defer to positive pandas tests
+    if pd.api.types.is_numeric_dtype(vector):
+        return VarType("numeric")
+
+    if pd.api.types.is_datetime64_dtype(vector):
+        return VarType("datetime")
+
+    if pd.api.types.is_timedelta64_dtype(vector):
+        return VarType("datetime")
 
     # --- If we get to here, we need to check the entries
 
