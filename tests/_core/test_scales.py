@@ -440,6 +440,27 @@ class TestNominal:
         null = (np.nan, np.nan, np.nan)
         assert_array_equal(s(y), [c2, c1, null, c1])
 
+    def test_color_numeric_int_float_mixed_data(self):
+        # Regression test for GH#XXXX
+        # When scale is setup with float data but applied to int data,
+        # the conversion should work correctly (1 should match 1.0)
+        # This happens when multiple layers share a color variable with
+        # different subsets of numeric values
+        float_data = pd.Series([1.0, 2.0, 3.0], name="color")
+        int_data = pd.Series([1, 2, 3], name="color")
+
+        # Setup scale with float data (as happens with merged layer data)
+        s = Nominal()._setup(float_data, Color())
+
+        # Apply to int data (as happens when processing individual layers)
+        # Should not raise IndexError
+        result = s(int_data)
+
+        # All three values should map to valid colors (not NaN)
+        assert len(result) == 3
+        for color in result:
+            assert not any(np.isnan(c) for c in color)
+
     @pytest.mark.xfail(reason="Need to sort out float/int order")
     def test_color_numeric_int_float_mix(self):
 
