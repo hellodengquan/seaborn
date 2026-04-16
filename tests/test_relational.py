@@ -1683,7 +1683,10 @@ class TestScatterPlotter(SharedAxesLevelTests, Helpers):
 
         ax = scatterplot(data=long_df, x="x", y="y", hue="a", hue_order=order)
         points = ax.collections[0]
-        assert (points.get_facecolors()[long_df["a"] == unused] == 0).all()
+        # Points with unused hue levels should be filtered out, not drawn as transparent
+        num_points_drawn = len(points.get_facecolors())
+        num_points_expected = long_df["a"].isin(order).sum()
+        assert num_points_drawn == num_points_expected
         assert [t.get_text() for t in ax.legend_.texts] == order
 
     def test_linewidths(self, long_df):
