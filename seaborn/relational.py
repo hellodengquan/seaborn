@@ -405,6 +405,16 @@ class _ScatterPlotter(_RelationalPlotter):
         if data.empty:
             return
 
+        # Filter data to only include levels specified in order parameters
+        for var in ["hue", "size", "style"]:
+            if var in self.variables:
+                var_levels = self.var_levels.get(var)
+                if var_levels is not None:
+                    data = data[data[var].isin(var_levels)]
+        
+        if data.empty:
+            return
+
         kws = normalize_kwargs(kws, mpl.collections.PathCollection)
 
         # Define the vectors of x and y positions
