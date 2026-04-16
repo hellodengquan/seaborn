@@ -405,6 +405,22 @@ class _ScatterPlotter(_RelationalPlotter):
         if data.empty:
             return
 
+        # Filter data to only include levels that are in the semantic maps
+        # This ensures that when hue_order/style_order/size_order is a strict
+        # subset of the data values, we only plot the requested subset
+        if "hue" in self.variables:
+            hue_levels = set(self._hue_map.levels)
+            data = data[data["hue"].isin(hue_levels)]
+        if "style" in self.variables:
+            style_levels = set(self._style_map.levels)
+            data = data[data["style"].isin(style_levels)]
+        if "size" in self.variables:
+            size_levels = set(self._size_map.levels)
+            data = data[data["size"].isin(size_levels)]
+
+        if data.empty:
+            return
+
         kws = normalize_kwargs(kws, mpl.collections.PathCollection)
 
         # Define the vectors of x and y positions
