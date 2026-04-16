@@ -310,7 +310,11 @@ class Nominal(Scale):
             # keep = x.isin(units_seed)
             keep = np.array([x_ in units_seed for x_ in x], bool)
             out = np.full(len(x), np.nan)
-            out[keep] = axis.convert_units(stringify(x[keep]))
+            # Ensure consistent string representation by matching the dtype of units_seed
+            x_keep = x[keep]
+            if len(units_seed) > 0 and len(x_keep) > 0:
+                x_keep = np.asarray(x_keep, dtype=np.asarray(units_seed).dtype)
+            out[keep] = axis.convert_units(stringify(x_keep))
             return out
 
         new._pipeline = [convert_units, prop.get_mapping(new, data)]
