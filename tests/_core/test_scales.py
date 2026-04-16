@@ -583,6 +583,32 @@ class TestNominal:
         for i, expected in enumerate(levels):
             assert ax.yaxis.major.formatter(i) == expected
 
+    def test_numeric_data_consistent_string_conversion(self):
+        z = pd.Series([1, 2, 3], name="z")
+        s = Nominal()._setup(z, Color())
+        cs = color_palette(n_colors=3)
+        assert_array_equal(s(z), cs)
+
+    def test_numeric_data_partial_layer_values(self):
+        z1 = pd.Series([1, 2, 3], name="z")
+        z2 = pd.Series([1], name="z")
+        s = Nominal()._setup(z1, Color())
+        cs = color_palette(n_colors=3)
+        assert_array_equal(s(z1), cs)
+        assert_array_equal(s(z2), [cs[0]])
+
+    def test_numeric_data_with_int_dtype(self):
+        z = pd.Series([1, 2, 3], name="z", dtype=int)
+        s = Nominal()._setup(z, Color())
+        cs = color_palette(n_colors=3)
+        assert_array_equal(s(z), cs)
+
+    def test_numeric_data_with_float_dtype(self):
+        z = pd.Series([1.0, 2.0, 3.0], name="z", dtype=float)
+        s = Nominal()._setup(z, Color())
+        cs = color_palette(n_colors=3)
+        assert_array_equal(s(z), cs)
+
 
 class TestTemporal:
 
