@@ -310,7 +310,11 @@ class Nominal(Scale):
             # keep = x.isin(units_seed)
             keep = np.array([x_ in units_seed for x_ in x], bool)
             out = np.full(len(x), np.nan)
-            out[keep] = axis.convert_units(stringify(x[keep]))
+            # Note: in versions <=0.13.0 we used axis.convert_units(stringify(x[keep]))
+            # but this caused issues when the input was numeric. matplotlib's
+            # StrCategoryConverter treats integers and strings as distinct units,
+            # so we directly map using units_seed to guarantee consistent indexing.
+            out[keep] = [units_seed.index(x_) for x_ in x[keep]]
             return out
 
         new._pipeline = [convert_units, prop.get_mapping(new, data)]
