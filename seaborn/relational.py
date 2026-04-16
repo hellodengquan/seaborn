@@ -402,6 +402,16 @@ class _ScatterPlotter(_RelationalPlotter):
         # --- Determine the visual attributes of the plot
 
         data = self.comp_data.dropna()
+
+        # Filter to data values that appear in the semantic mapping levels
+        # This matches the behavior of lineplot, which uses iter_data that only
+        # iterates over the specified levels, excluding other data values
+        semantic_vars = ["hue", "size", "style"]
+        for var in semantic_vars:
+            if var in self.variables:
+                levels = getattr(self, f"_{var}_map").levels
+                data = data[data[var].isin(levels)]
+
         if data.empty:
             return
 
