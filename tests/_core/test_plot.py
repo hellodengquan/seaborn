@@ -2348,3 +2348,18 @@ class TestDisplayConfig:
         img2 = Image.open(io.BytesIO(res2))
         assert img1.size[0] // 2 == img2.size[0]
         assert img1.size[1] // 2 == img2.size[1]
+
+
+class TestRegressions:
+
+    def test_nominal_scale_integer_color_with_partial_layer(self):
+
+        # Regression test: integer color values with Nominal scale
+        # and partial data in subsequent layers
+        p = (
+            Plot(x=[1, 2, 3], y=[1, 2, 3], color=[1, 2, 3])
+            .add(Dot())
+            .add(Dot(), x=[1], y=[1], color=[1])
+            .scale(color=Nominal())
+        )
+        p.plot()
