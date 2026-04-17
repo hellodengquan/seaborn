@@ -457,6 +457,51 @@ class _CategoricalPlotter(VectorPlotter):
                 offsets = np.zeros(n_levels)
         return offsets
 
+    def _compute_violin_norm_stats(self, violin_data, common_norm):
+        """Compute normalization statistics for violin density scaling."""
+        def vars_to_key(sub_vars):
+            return tuple((k, v) for k, v in sub_vars.items() if k != self.orient)
+
+        norm_keys = [vars_to_key(violin["sub_vars"]) for violin in violin_data]
+        if common_norm:
+            common_max_density = np.nanmax([v["density"].max() for v in violin_data])
+            common_max_count = np.nanmax([len(v["observations"]) for v in violin_data])
+            max_density = {key: common_max_density for key in norm_keys}
+            max_count = {key: common_max_count for key in norm_keys}
+        else:
+            with warnings.catch_warnings():
+                warnings.filterwarnings('ignore', "All-NaN (slice|axis) encountered")
+                max_density = {
+                    key: np.nanmax([
+                        v["density"].max() for v in violin_data
+                        if vars_to_key(v["sub_vars"]) == key
+                    ]) for key in norm_keys
+                }
+            max_count = {
+                key: np.nanmax([
+                    len(v["observations"]) for v in violin_data
+                    if vars_to_key(v["sub_vars"]) == key
+                ]) for key in norm_keys
+            }
+
+        return max_density, max_count
+
+    def _compute_violin_span(
+        self, density, peak_density, count, max_density, max_count,
+        hw, density_norm, split
+    ):
+        """Compute normalized span for violin width."""
+        if np.isnan(peak_density):
+            span = 1
+        elif density_norm == "area":
+            span = density / max_density
+        elif density_norm == "count":
+            span = density / peak_density * (count / max_count)
+        elif density_norm == "width":
+            span = density / peak_density
+        span = span * hw * (2 if split else 1)
+        return span
+
     # Note that the plotting methods here aim (in most cases) to produce the
     # exact same artists as the original (pre 0.12) version of the code, so
     # there is some weirdness that might not otherwise be clean or make sense in
@@ -962,31 +1007,12 @@ class _CategoricalPlotter(VectorPlotter):
             })
 
         # Once we've computed all the KDEs, get statistics for normalization
+        max_density, max_count = self._compute_violin_norm_stats(
+            violin_data, common_norm
+        )
+
         def vars_to_key(sub_vars):
             return tuple((k, v) for k, v in sub_vars.items() if k != self.orient)
-
-        norm_keys = [vars_to_key(violin["sub_vars"]) for violin in violin_data]
-        if common_norm:
-            common_max_density = np.nanmax([v["density"].max() for v in violin_data])
-            common_max_count = np.nanmax([len(v["observations"]) for v in violin_data])
-            max_density = {key: common_max_density for key in norm_keys}
-            max_count = {key: common_max_count for key in norm_keys}
-        else:
-            with warnings.catch_warnings():
-                # Ignore warning when all violins are singular; it's not important
-                warnings.filterwarnings('ignore', "All-NaN (slice|axis) encountered")
-                max_density = {
-                    key: np.nanmax([
-                        v["density"].max() for v in violin_data
-                        if vars_to_key(v["sub_vars"]) == key
-                    ]) for key in norm_keys
-                }
-            max_count = {
-                key: np.nanmax([
-                    len(v["observations"]) for v in violin_data
-                    if vars_to_key(v["sub_vars"]) == key
-                ]) for key in norm_keys
-            }
 
         real_width = width * self._native_width
 
@@ -1010,16 +1036,12 @@ class _CategoricalPlotter(VectorPlotter):
             norm_key = vars_to_key(violin["sub_vars"])
             hw = data["width"] / 2
             peak_density = violin["density"].max()
-            if np.isnan(peak_density):
-                span = 1
-            elif density_norm == "area":
-                span = data["density"] / max_density[norm_key]
-            elif density_norm == "count":
-                count = len(violin["observations"])
-                span = data["density"] / peak_density * (count / max_count[norm_key])
-            elif density_norm == "width":
-                span = data["density"] / peak_density
-            span = span * hw * (2 if split else 1)
+            count = len(violin["observations"])
+            span = self._compute_violin_span(
+                data["density"], peak_density, count,
+                max_density[norm_key], max_count[norm_key],
+                hw, density_norm, split
+            )
 
             # Handle split violins (i.e. asymmetric spans)
             right_side = (
