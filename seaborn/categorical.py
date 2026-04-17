@@ -27,6 +27,7 @@ from seaborn.utils import (
     _get_transform_functions,
     _scatter_legend_artist,
     _version_predates,
+    _warn_deprecated_parameter,
 )
 from seaborn._compat import groupby_apply_include_groups
 from seaborn._statistics import (
@@ -263,13 +264,9 @@ class _CategoricalPlotter(VectorPlotter):
 
     def _violin_scale_backcompat(self, scale, scale_hue, density_norm, common_norm):
         """Provide two cycles of backcompat for scale kwargs"""
-        if scale is not deprecated:
-            density_norm = scale
-            msg = (
-                "\n\nThe `scale` parameter has been renamed and will be removed "
-                f"in v0.15.0. Pass `density_norm={scale!r}` for the same effect."
-            )
-            warnings.warn(msg, FutureWarning, stacklevel=3)
+        density_norm = _warn_deprecated_parameter(
+            scale, density_norm, "scale", "density_norm", "0.15.0", stacklevel=3
+        )
 
         if scale_hue is not deprecated:
             common_norm = scale_hue

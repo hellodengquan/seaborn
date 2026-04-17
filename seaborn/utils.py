@@ -800,6 +800,56 @@ def adjust_legend_subtitles(legend):
                     text.set_size(font_size)
 
 
+def _warn_deprecated_parameter(old_param, new_param, old_name, new_name,
+                               version, stacklevel=3, details=None):
+    """
+    Warn about deprecated parameter usage and return the new parameter value.
+
+    This helper centralizes the common pattern of checking if an old parameter
+    has been used, issuing a FutureWarning, and returning the new parameter value.
+
+    Parameters
+    ----------
+    old_param : any
+        The value of the old/deprecated parameter. Should be compared against
+        the `deprecated` sentinel to check if it was explicitly passed.
+    new_param : any
+        The current value of the new parameter, which may be updated if the
+        old parameter was used.
+    old_name : str
+        The name of the deprecated parameter (for the warning message).
+    new_name : str
+        The name of the new parameter (for the warning message).
+    version : str
+        The version in which the old parameter will be removed.
+    stacklevel : int, optional
+        The stacklevel for the warning (default is 3).
+    details : str, optional
+        Additional details to append to the warning message (e.g., notes about
+        behavioral differences or alternative usage).
+
+    Returns
+    -------
+    new_param : any
+        The updated value for the new parameter.
+
+    """
+    from seaborn._core.typing import deprecated
+
+    if old_param is deprecated:
+        return new_param
+
+    msg = f"\n\nThe `{old_name}` parameter has been renamed to `{new_name}`"
+    if details:
+        msg += f" and will be removed in v{version}. {details}"
+    else:
+        msg += f" and will be removed in v{version}."
+    msg += f" Pass `{new_name}={old_param!r}` for the same effect."
+    warnings.warn(msg, FutureWarning, stacklevel=stacklevel)
+
+    return old_param
+
+
 def _deprecate_ci(errorbar, ci):
     """
     Warn on usage of ci= and convert to appropriate errorbar= arg.
