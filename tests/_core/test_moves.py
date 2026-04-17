@@ -238,7 +238,7 @@ class TestDodge(MoveFixtures):
         groupby = GroupBy(["x", grp])
         res = Dodge()(df, groupby, "x", {})
 
-        levels = categorical_order(df[grp])
+        levels = sorted(categorical_order(df[grp]))
         w, n = 0.8, len(levels)
 
         shifts = np.linspace(0, w - w / n, n)
@@ -256,7 +256,10 @@ class TestDodge(MoveFixtures):
         groupby = GroupBy(["x", "grp2", "grp3"])
         res = Dodge()(df, groupby, "x", {})
 
-        levels = categorical_order(df["grp2"]), categorical_order(df["grp3"])
+        levels = (
+            sorted(categorical_order(df["grp2"])),
+            sorted(categorical_order(df["grp3"])),
+        )
         w, n = 0.8, len(levels[0]) * len(levels[1])
 
         shifts = np.linspace(0, w - w / n, n)
