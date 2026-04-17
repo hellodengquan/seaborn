@@ -3,11 +3,13 @@ from dataclasses import dataclass
 from typing import ClassVar, Callable, Optional, Union, cast
 
 import numpy as np
+import pandas as pd
 from pandas import DataFrame
 
 from seaborn._core.groupby import GroupBy
 from seaborn._core.scales import Scale
 from seaborn._core.typing import Default
+from seaborn._core.rules import categorical_order
 
 default = Default()
 
@@ -111,6 +113,28 @@ class Dodge(Move):
         groups = groupby.agg(data, {"width": "max"})
         if self.empty == "fill":
             groups = groups.dropna()
+
+        # Sort groups by grouping_vars to ensure consistent dodge ordering
+        # regardless of input data order (e.g., aggregated vs. raw data).
+        # Use the scale's order if available, otherwise use categorical_order.
+        if grouping_vars:
+            # Store original dtypes to restore later
+            original_dtypes = {var: groups[var].dtype for var in grouping_vars}
+            sort_cols = []
+            for var in grouping_vars:
+                if var in scales and hasattr(scales[var], 'order') and scales[var].order is not None:
+                    # Use the scale's order for proper sorting
+                    order = scales[var].order
+                else:
+                    # Use categorical_order to match the expected behavior
+                    order = categorical_order(groups[var])
+                # Create a categorical with the determined order for proper sorting
+                groups[var] = pd.Categorical(groups[var], categories=order, ordered=True)
+                sort_cols.append(var)
+            groups = groups.sort_values(sort_cols).reset_index(drop=True)
+            # Convert categoricals back to original dtype
+            for var in grouping_vars:
+                groups[var] = groups[var].astype(original_dtypes[var])
 
         def groupby_pos(s):
             grouper = [groups[v] for v in [orient, "col", "row"] if v in data]
