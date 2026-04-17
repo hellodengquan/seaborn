@@ -800,6 +800,33 @@ def adjust_legend_subtitles(legend):
                     text.set_size(font_size)
 
 
+def _deprecate_parameter(old_name, new_name, new_value, message, stacklevel=3):
+    """
+    Issue a FutureWarning for a deprecated parameter.
+
+    Parameters
+    ----------
+    old_name : str
+        Name of the deprecated parameter.
+    new_name : str
+        Name of the new parameter.
+    new_value : Any
+        Value to assign to the new parameter.
+    message : str
+        Warning message to display.
+    stacklevel : int, optional
+        Stack level for the warning. Default is 3.
+
+    Returns
+    -------
+    Any
+        The new_value passed in.
+
+    """
+    warnings.warn(message, FutureWarning, stacklevel=stacklevel)
+    return new_value
+
+
 def _deprecate_ci(errorbar, ci):
     """
     Warn on usage of ci= and convert to appropriate errorbar= arg.
@@ -820,7 +847,7 @@ def _deprecate_ci(errorbar, ci):
             "\n\nThe `ci` parameter is deprecated. "
             f"Use `errorbar={repr(errorbar)}` for the same effect.\n"
         )
-        warnings.warn(msg, FutureWarning, stacklevel=3)
+        errorbar = _deprecate_parameter("ci", "errorbar", errorbar, msg)
 
     return errorbar
 
