@@ -109,6 +109,7 @@ class Dodge(Move):
 
         grouping_vars = [v for v in groupby.order if v in data]
         groups = groupby.agg(data, {"width": "max"})
+        groups = groups.sort_values(grouping_vars, ignore_index=True)
         if self.empty == "fill":
             groups = groups.dropna()
 
