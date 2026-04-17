@@ -27,6 +27,7 @@ from seaborn.utils import (
     _get_transform_functions,
     _scatter_legend_artist,
     _version_predates,
+    _deprecate_param,
 )
 from seaborn._compat import groupby_apply_include_groups
 from seaborn._statistics import (
@@ -239,13 +240,14 @@ class _CategoricalPlotter(VectorPlotter):
         def deprecate_err_param(name, key, val):
             if val is deprecated:
                 return
-            suggest = f"err_kws={{'{key}': {val!r}}}"
-            msg = (
-                f"\n\nThe `{name}` parameter is deprecated. And will be removed "
-                f"in v0.15.0. Pass `{suggest}` instead.\n"
+            err_kws[key] = _deprecate_param(
+                old_name=name,
+                old_value=val,
+                new_name=f"err_kws['{key}']",
+                new_value=err_kws.get(key),
+                version="v0.15.0",
+                stacklevel=5,
             )
-            warnings.warn(msg, FutureWarning, stacklevel=4)
-            err_kws[key] = val
 
         if errcolor is not None:
             deprecate_err_param("errcolor", "color", errcolor)
@@ -263,61 +265,77 @@ class _CategoricalPlotter(VectorPlotter):
 
     def _violin_scale_backcompat(self, scale, scale_hue, density_norm, common_norm):
         """Provide two cycles of backcompat for scale kwargs"""
-        if scale is not deprecated:
-            density_norm = scale
-            msg = (
-                "\n\nThe `scale` parameter has been renamed and will be removed "
-                f"in v0.15.0. Pass `density_norm={scale!r}` for the same effect."
-            )
-            warnings.warn(msg, FutureWarning, stacklevel=3)
-
+        density_norm = _deprecate_param(
+            old_name="scale",
+            old_value=scale,
+            new_name="density_norm",
+            new_value=density_norm,
+            version="v0.15.0",
+            stacklevel=4,
+        )
         if scale_hue is not deprecated:
             common_norm = scale_hue
             msg = (
                 "\n\nThe `scale_hue` parameter has been replaced and will be removed "
-                f"in v0.15.0. Pass `common_norm={not scale_hue}` for the same effect."
+                f"in v0.15.0. Pass `common_norm={not scale_hue}` for the same effect.\n"
             )
             warnings.warn(msg, FutureWarning, stacklevel=3)
-
         return density_norm, common_norm
 
     def _violin_bw_backcompat(self, bw, bw_method):
         """Provide two cycles of backcompat for violin bandwidth parameterization."""
-        if bw is not deprecated:
-            bw_method = bw
-            msg = dedent(f"""\n
-                The `bw` parameter is deprecated in favor of `bw_method`/`bw_adjust`.
-                Setting `bw_method={bw!r}`, but please see docs for the new parameters
-                and update your code. This will become an error in seaborn v0.15.0.
-            """)
-            warnings.warn(msg, FutureWarning, stacklevel=3)
-        return bw_method
+        msg_template = dedent("""
+
+            The `{old_name}` parameter is deprecated in favor of `bw_method`/`bw_adjust`.
+            Setting `{new_name}={new_value_repr}`, but please see docs for the new parameters
+            and update your code. This will become an error in seaborn {version}.
+        """)
+        return _deprecate_param(
+            old_name="bw",
+            old_value=bw,
+            new_name="bw_method",
+            new_value=bw_method,
+            version="v0.15.0",
+            msg_template=msg_template,
+            stacklevel=4,
+        )
 
     def _boxen_scale_backcompat(self, scale, width_method):
         """Provide two cycles of backcompat for scale kwargs"""
         if scale is not deprecated:
-            width_method = scale
-            msg = (
-                "\n\nThe `scale` parameter has been renamed to `width_method` and "
-                f"will be removed in v0.15. Pass `width_method={scale!r}"
-            )
             if scale == "area":
-                msg += ", but note that the result for 'area' will appear different."
+                suffix = ", but note that the result for 'area' will appear different."
             else:
-                msg += " for the same effect."
-            warnings.warn(msg, FutureWarning, stacklevel=3)
-
+                suffix = " for the same effect."
+            msg_template = (
+                "\n\nThe `{old_name}` parameter has been renamed to `{new_name}` and "
+                "will be removed in {version}. Pass `{new_name}={new_value_repr}" + suffix
+            )
+            width_method = _deprecate_param(
+                old_name="scale",
+                old_value=scale,
+                new_name="width_method",
+                new_value=width_method,
+                version="v0.15",
+                msg_template=msg_template,
+                stacklevel=4,
+            )
         return width_method
 
     def _complement_color(self, color, base_color, hue_map):
         """Allow a color to be set automatically using a basis of comparison."""
         if color == "gray":
-            msg = (
-                'Use "auto" to set automatic grayscale colors. From v0.14.0, '
-                '"gray" will default to matplotlib\'s definition.'
+            extra_msg = 'Use "auto" to set automatic grayscale colors. From v0.14.0, "gray" will default to matplotlib\'s definition.'
+            color = _deprecate_param(
+                old_name="color",
+                old_value=color,
+                new_name="color",
+                new_value="auto",
+                version="v0.14.0",
+                map_value=lambda x: "auto",
+                extra_msg=extra_msg,
+                stacklevel=4,
             )
-            warnings.warn(msg, FutureWarning, stacklevel=3)
-            color = "auto"
         elif color is None or color is default:
             color = "auto"
 

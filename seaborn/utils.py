@@ -800,6 +800,78 @@ def adjust_legend_subtitles(legend):
                     text.set_size(font_size)
 
 
+def _deprecate_param(
+    old_name,
+    old_value,
+    new_name,
+    new_value,
+    version,
+    *,
+    map_value=None,
+    msg_template=None,
+    extra_msg="",
+    stacklevel=3,
+    category=FutureWarning,
+):
+    """
+    Handle parameter deprecation with consistent warning behavior.
+
+    Parameters
+    ----------
+    old_name : str
+        Name of the deprecated parameter (for warning message).
+    old_value : any
+        Value passed to the deprecated parameter.
+    new_name : str
+        Name of the new parameter (for warning message).
+    new_value : any
+        Current value of the new parameter to return if no deprecation.
+    version : str
+        Version when the deprecation will be enforced.
+    map_value : callable, optional
+        Function to convert old_value to new_value. If not provided,
+        old_value will be used directly as new_value.
+    msg_template : str, optional
+        Custom message template. Use {old_name}, {new_name}, {new_value_repr},
+        and {version} as format placeholders.
+    extra_msg : str, optional
+        Additional text to append to the standard deprecation message.
+    stacklevel : int, default 3
+        Stacklevel for the warnings.warn call.
+    category : Warning, default FutureWarning
+        Warning category to use.
+
+    Returns
+    -------
+    new_value
+        Updated new parameter value after handling deprecation.
+
+    """
+    if old_value is not deprecated and old_value != "deprecated":
+        if map_value is not None:
+            new_value = map_value(old_value)
+        else:
+            new_value = old_value
+        new_value_repr = repr(new_value)
+        if msg_template is None:
+            msg = (
+                f"\n\nThe `{old_name}` parameter is deprecated and will be removed "
+                f"in {version}. Pass `{new_name}={new_value_repr}` instead."
+            )
+        else:
+            msg = msg_template.format(
+                old_name=old_name,
+                new_name=new_name,
+                new_value_repr=new_value_repr,
+                version=version,
+            )
+        if extra_msg:
+            msg += "\n" + extra_msg
+        msg += "\n"
+        warnings.warn(msg, category, stacklevel=stacklevel)
+    return new_value
+
+
 def _deprecate_ci(errorbar, ci):
     """
     Warn on usage of ci= and convert to appropriate errorbar= arg.
@@ -809,20 +881,23 @@ def _deprecate_ci(errorbar, ci):
     (and extracted from kwargs) after one cycle.
 
     """
-    if ci is not deprecated and ci != "deprecated":
+    def _ci_to_errorbar(ci):
         if ci is None:
-            errorbar = None
+            return None
         elif ci == "sd":
-            errorbar = "sd"
+            return "sd"
         else:
-            errorbar = ("ci", ci)
-        msg = (
-            "\n\nThe `ci` parameter is deprecated. "
-            f"Use `errorbar={repr(errorbar)}` for the same effect.\n"
-        )
-        warnings.warn(msg, FutureWarning, stacklevel=3)
-
-    return errorbar
+            return ("ci", ci)
+    return _deprecate_param(
+        old_name="ci",
+        old_value=ci,
+        new_name="errorbar",
+        new_value=errorbar,
+        version="v0.15.0",
+        map_value=_ci_to_errorbar,
+        msg_template="\n\nThe `{old_name}` parameter is deprecated. Use `{new_name}={new_value_repr}` for the same effect.",
+        stacklevel=4,
+    )
 
 
 def _get_transform_functions(ax, axis):
