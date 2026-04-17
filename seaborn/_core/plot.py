@@ -1252,7 +1252,13 @@ class Plotter:
                     grouper = [orient, *grouping_vars]
                 else:
                     grouper = grouping_vars
-                groupby = GroupBy(grouper)
+
+                def get_order(var):
+                    if var not in "xy" and var in scales:
+                        return getattr(scales[var], "order", None)
+
+                order = {var: get_order(var) for var in grouper}
+                groupby = GroupBy(order)
                 res = stat(df, groupby, orient, scales)
 
                 if pair_vars:
