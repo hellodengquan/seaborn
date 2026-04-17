@@ -21,6 +21,7 @@ from seaborn import utils
 from seaborn.utils import (
     desaturate,
     _check_argument,
+    _deprecate_parameter,
     _draw_figure,
     _default_color,
     _get_patch_legend_artist,
@@ -236,67 +237,65 @@ class _CategoricalPlotter(VectorPlotter):
 
     def _err_kws_backcompat(self, err_kws, errcolor, errwidth, capsize):
         """Provide two cycles where existing signature-level err_kws are handled."""
-        def deprecate_err_param(name, key, val):
-            if val is deprecated:
-                return
-            suggest = f"err_kws={{'{key}': {val!r}}}"
+        if errcolor is not None and errcolor is not deprecated:
+            suggest = f"err_kws={{'color': {errcolor!r}}}"
             msg = (
-                f"\n\nThe `{name}` parameter is deprecated. And will be removed "
+                f"\n\nThe `errcolor` parameter is deprecated. And will be removed "
                 f"in v0.15.0. Pass `{suggest}` instead.\n"
             )
-            warnings.warn(msg, FutureWarning, stacklevel=4)
-            err_kws[key] = val
+            _deprecate_parameter("errcolor", "err_kws", None, msg, stacklevel=4)
+            err_kws["color"] = errcolor
 
-        if errcolor is not None:
-            deprecate_err_param("errcolor", "color", errcolor)
-        deprecate_err_param("errwidth", "linewidth", errwidth)
+        if errwidth is not deprecated:
+            suggest = f"err_kws={{'linewidth': {errwidth!r}}}"
+            msg = (
+                f"\n\nThe `errwidth` parameter is deprecated. And will be removed "
+                f"in v0.15.0. Pass `{suggest}` instead.\n"
+            )
+            _deprecate_parameter("errwidth", "err_kws", None, msg, stacklevel=4)
+            err_kws["linewidth"] = errwidth
 
         if capsize is None:
-            capsize = 0
             msg = (
                 "\n\nPassing `capsize=None` is deprecated and will be removed "
                 "in v0.15.0. Pass `capsize=0` to disable caps.\n"
             )
-            warnings.warn(msg, FutureWarning, stacklevel=3)
+            capsize = _deprecate_parameter("capsize", "capsize", 0, msg)
 
         return err_kws, capsize
 
     def _violin_scale_backcompat(self, scale, scale_hue, density_norm, common_norm):
         """Provide two cycles of backcompat for scale kwargs"""
         if scale is not deprecated:
-            density_norm = scale
             msg = (
                 "\n\nThe `scale` parameter has been renamed and will be removed "
                 f"in v0.15.0. Pass `density_norm={scale!r}` for the same effect."
             )
-            warnings.warn(msg, FutureWarning, stacklevel=3)
+            density_norm = _deprecate_parameter("scale", "density_norm", scale, msg)
 
         if scale_hue is not deprecated:
-            common_norm = scale_hue
             msg = (
                 "\n\nThe `scale_hue` parameter has been replaced and will be removed "
                 f"in v0.15.0. Pass `common_norm={not scale_hue}` for the same effect."
             )
-            warnings.warn(msg, FutureWarning, stacklevel=3)
+            common_norm = _deprecate_parameter("scale_hue", "common_norm", scale_hue, msg)
 
         return density_norm, common_norm
 
     def _violin_bw_backcompat(self, bw, bw_method):
         """Provide two cycles of backcompat for violin bandwidth parameterization."""
         if bw is not deprecated:
-            bw_method = bw
             msg = dedent(f"""\n
                 The `bw` parameter is deprecated in favor of `bw_method`/`bw_adjust`.
                 Setting `bw_method={bw!r}`, but please see docs for the new parameters
                 and update your code. This will become an error in seaborn v0.15.0.
             """)
-            warnings.warn(msg, FutureWarning, stacklevel=3)
+            bw_method = _deprecate_parameter("bw", "bw_method", bw, msg)
         return bw_method
 
     def _boxen_scale_backcompat(self, scale, width_method):
         """Provide two cycles of backcompat for scale kwargs"""
         if scale is not deprecated:
-            width_method = scale
             msg = (
                 "\n\nThe `scale` parameter has been renamed to `width_method` and "
                 f"will be removed in v0.15. Pass `width_method={scale!r}"
@@ -305,7 +304,7 @@ class _CategoricalPlotter(VectorPlotter):
                 msg += ", but note that the result for 'area' will appear different."
             else:
                 msg += " for the same effect."
-            warnings.warn(msg, FutureWarning, stacklevel=3)
+            width_method = _deprecate_parameter("scale", "width_method", scale, msg)
 
         return width_method
 
