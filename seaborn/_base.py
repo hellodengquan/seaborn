@@ -1520,14 +1520,20 @@ def variable_type(vector, boolean_type="numeric"):
         warnings.simplefilter(
             action='ignore', category=(FutureWarning, DeprecationWarning)
         )
-        if np.isin(vector, [0, 1]).all():
-            return VariableType(boolean_type)
+        try:
+            if np.isin(vector, [0, 1]).all():
+                return VariableType(boolean_type)
+        except TypeError:
+            pass
 
     # Defer to positive pandas tests
     if pd.api.types.is_numeric_dtype(vector):
         return VariableType("numeric")
 
     if pd.api.types.is_datetime64_dtype(vector):
+        return VariableType("datetime")
+
+    if pd.api.types.is_timedelta64_dtype(vector):
         return VariableType("datetime")
 
     # --- If we get to here, we need to check the entries
