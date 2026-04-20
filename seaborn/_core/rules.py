@@ -97,9 +97,12 @@ def variable_type(
                 boolean_dtypes = ["bool"]
             boolean_vector = vector.dtype in boolean_dtypes
         else:
-            boolean_vector = bool(np.isin(vector, [0, 1]).all())
-        if boolean_vector:
-            return VarType(boolean_type)
+            try:
+                boolean_vector = bool(np.isin(vector, [0, 1]).all())
+            except TypeError:
+                boolean_vector = False
+    if boolean_vector:
+        return VarType(boolean_type)
 
     # Defer to positive pandas tests
     if pd.api.types.is_numeric_dtype(vector):
@@ -107,6 +110,9 @@ def variable_type(
 
     if pd.api.types.is_datetime64_dtype(vector):
         return VarType("datetime")
+
+    if pd.api.types.is_timedelta64_dtype(vector):
+        return VarType("numeric")
 
     # --- If we get to here, we need to check the entries
 
